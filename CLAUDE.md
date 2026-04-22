@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Status
+
+This repository is **no longer actively maintained**. v0.6.0 was the final release. There is no active roadmap or issue triage — treat requests as fork/self-hosted work unless the user says otherwise.
+
 ## Common Development Commands
 
 ### Development Server
@@ -31,6 +35,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Setup
 - `bin/setup` - Initial project setup (installs dependencies, prepares database)
+- `rake demo_data:default` - Load demo data after setup
+- Default dev login (from seeds): `user@maybe.local` / `password`
+
+### Ad-hoc scripts
+- `bin/rails runner path/to/script.rb` - Execute a Ruby script in the Rails environment
+- `/lookbook` (dev only) - ViewComponent preview environment for iterating on components in isolation
 
 ## Pre-Pull Request CI Workflow
 
@@ -107,11 +117,7 @@ Sidekiq handles asynchronous tasks:
 - **ViewComponents**: Reusable UI components in `app/components/`
 - **Stimulus Controllers**: Handle interactivity, organized alongside components
 - **Charts**: D3.js for financial visualizations (time series, donut, sankey)
-- **Styling**: Tailwind CSS v4.x with custom design system
-  - Design system defined in `app/assets/tailwind/maybe-design-system.css`
-  - Always use functional tokens (e.g., `text-primary` not `text-white`)
-  - Prefer semantic HTML elements over JS components
-  - Use `icon` helper for icons, never `lucide_icon` directly
+- **Styling**: Tailwind CSS v4.x with custom design system — see the TailwindCSS Design System section below for rules
 
 ### Multi-Currency Support
 - All monetary values stored in base currency (user's primary currency)
@@ -126,16 +132,6 @@ Sidekiq handles asynchronous tasks:
   - API keys with JWT tokens for direct API access
 - Scoped permissions system for API access
 - Strong parameters and CSRF protection throughout
-
-### Testing Philosophy
-- Comprehensive test coverage using Rails' built-in Minitest
-- Fixtures for test data (avoid FactoryBot)
-- Keep fixtures minimal (2-3 per model for base cases)
-- VCR for external API testing
-- System tests for critical user flows (use sparingly)
-- Test helpers in `test/support/` for common scenarios
-- Only test critical code paths that significantly increase confidence
-- Write tests as you go, when required
 
 ### Performance Considerations
 - Database queries optimized with proper indexes
@@ -169,7 +165,7 @@ Sidekiq handles asynchronous tasks:
 - **Leverage Turbo frames** for page sections over client-side solutions
 - **Query params for state** over localStorage/sessions
 - **Server-side formatting** for currencies, numbers, dates
-- **Always use `icon` helper** in `application_helper.rb`, NEVER `lucide_icon` directly
+- **Always use the `icon` helper** in `application_helper.rb`, NEVER `lucide_icon` directly
 
 ### Convention 4: Optimize for Simplicity
 - Prioritize good OOP domain design over performance

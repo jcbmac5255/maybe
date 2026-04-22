@@ -4,6 +4,17 @@
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
 
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var pref = root.getAttribute("data-theme");
+      if (pref === "system" || !pref) {
+        pref = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      root.setAttribute("data-theme", pref);
+    })();
+  </script>
+
   <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
 
   <%= javascript_include_tag "https://cdn.plaid.com/link/v2/stable/link-initialize.js" %>
