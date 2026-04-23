@@ -11,6 +11,7 @@ All notable changes to this self-hosted fork are listed here. Newest entries go 
 ### Changed
 - **Calendar scales better on mobile** — tighter cells, single-letter day headers, and colored status dots instead of truncated name pills on small screens.
 - **Changelog page now reads from this file** — no more fetching release notes from the upstream (unmaintained) repo.
+- **Feedback page links repointed** to this fork's GitHub and the household Discord.
 
 ## 2026-04-23
 
