@@ -74,10 +74,14 @@
 
 /* Typography */
 .prose {
-  @apply max-w-none text-primary; 
+  @apply max-w-none text-primary;
 
   a {
     @apply text-link;
+  }
+
+  h1 {
+    @apply text-2xl font-semibold text-primary;
   }
 
   h2 {
