@@ -1,0 +1,72 @@
+<%# locals: (bills:, period:, today:) %>
+
+<%
+  first_of_month = period.beginning_of_month
+  last_of_month = period.end_of_month
+  grid_start = first_of_month - first_of_month.wday.days
+  grid_end = last_of_month + (6 - last_of_month.wday).days
+  dates = (grid_start..grid_end).to_a
+
+  bills_by_date = bills.each_with_object({}) do |bill, hash|
+    (hash[bill.due_date_for(period)] ||= []) << bill
+  end
+
+  status_classes = {
+    paid: "bg-green-500/15 text-green-700 theme-dark:text-green-400",
+    overdue: "bg-red-500/15 text-red-700 theme-dark:text-red-400",
+    upcoming: "bg-amber-500/15 text-amber-700 theme-dark:text-amber-500"
+  }
+%>
+
+<div class="bg-container rounded-xl shadow-border-xs p-4">
+  <div class="grid grid-cols-7 gap-1 text-xs text-secondary mb-2">
+    <% %w[Sun Mon Tue Wed Thu Fri Sat].each do |day| %>
+      <div class="text-center py-1 font-medium"><%= day %></div>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-7 gap-1">
+    <% dates.each do |date| %>
+      <% in_month = date.month == period.month %>
+      <% is_today = date == today %>
+      <% date_bills = bills_by_date[date] || [] %>
+
+      <div class="<%= class_names(
+        "min-h-[84px] p-1.5 rounded-md border transition-colors",
+        in_month ? "border-tertiary" : "border-transparent opacity-40",
+        is_today ? "ring-2 ring-blue-500 border-transparent" : ""
+      ) %>">
+        <div class="<%= class_names(
+          "text-xs font-medium mb-1 text-right px-1",
+          in_month ? "text-primary" : "text-subdued"
+        ) %>">
+          <%= date.day %>
+        </div>
+
+        <% if in_month %>
+          <div class="space-y-0.5">
+            <% date_bills.each do |bill| %>
+              <% status = bill.status_for(period, today: today) %>
+              <div class="text-[11px] leading-tight px-1.5 py-0.5 rounded truncate font-medium <%= status_classes[status] %>"
+                   title="<%= bill.name %> — <%= bill.amount_money.format %> — <%= status.to_s.capitalize %>">
+                <%= bill.name %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="flex items-center gap-4 mt-4 pt-3 border-t border-tertiary text-xs text-secondary">
+    <div class="flex items-center gap-1.5">
+      <span class="w-2.5 h-2.5 rounded-sm bg-green-500/60"></span> Paid
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-2.5 h-2.5 rounded-sm bg-red-500/60"></span> Overdue
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-2.5 h-2.5 rounded-sm bg-amber-500/60"></span> Upcoming
+    </div>
+  </div>
+</div>

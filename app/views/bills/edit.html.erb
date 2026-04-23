@@ -1,0 +1,6 @@
+<%= render DS::Dialog.new do |dialog| %>
+  <% dialog.with_header(title: "Edit bill") %>
+  <% dialog.with_body do %>
+    <%= render "form", bill: @bill %>
+  <% end %>
+<% end %>

@@ -1,0 +1,75 @@
+<%# locals: (bill:, period:, today:) %>
+
+<%
+  status = bill.status_for(period, today: today)
+  payment = bill.payment_for(period)
+
+  status_pill = {
+    paid: "text-green-700 theme-dark:text-green-400 bg-green-500/15",
+    overdue: "text-red-700 theme-dark:text-red-400 bg-red-500/15",
+    upcoming: "text-amber-700 theme-dark:text-amber-500 bg-amber-500/15"
+  }[status]
+
+  status_label = status.to_s.capitalize
+%>
+
+<div id="<%= dom_id(bill) %>" class="flex items-center justify-between gap-3 p-3 bg-container rounded-lg shadow-border-xs">
+  <div class="flex items-center gap-3 min-w-0">
+    <% if bill.category %>
+      <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+           style="background-color: <%= bill.category.color %>26; color: <%= bill.category.color %>">
+        <%= icon(bill.category.lucide_icon.presence || "circle-dollar-sign", size: "sm", color: "current") %>
+      </div>
+    <% else %>
+      <div class="w-9 h-9 rounded-full bg-container-inset flex items-center justify-center text-secondary shrink-0">
+        <%= icon "file-text", size: "sm", color: "current" %>
+      </div>
+    <% end %>
+
+    <div class="min-w-0">
+      <p class="text-sm font-medium text-primary truncate"><%= bill.name %></p>
+      <p class="text-xs text-secondary">
+        Due <%= bill.due_date_for(period).strftime("%b %-d") %>
+        <% if status == :paid && payment %>
+          · Paid <%= payment.paid_at.strftime("%b %-d") %>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3 shrink-0">
+    <p class="text-sm font-medium text-primary hidden sm:block"><%= bill.amount_money.format %></p>
+
+    <span class="text-xs font-medium px-2 py-1 rounded-md <%= status_pill %>">
+      <%= status_label %>
+    </span>
+
+    <% if status == :paid %>
+      <%= button_to bill_payments_path(bill_id: bill.id, period: period.strftime("%Y-%m")),
+            method: :delete,
+            form: { class: "inline" },
+            class: "text-xs font-medium text-secondary hover:text-primary px-2 py-1 rounded-md hover:bg-container-inset" do %>
+        Unmark
+      <% end %>
+    <% else %>
+      <%= button_to bill_payments_path(bill_id: bill.id, period: period.strftime("%Y-%m")),
+            method: :post,
+            form: { class: "inline" },
+            class: "text-xs font-medium px-2 py-1 rounded-md bg-container-inset hover:bg-container-inset-hover text-primary" do %>
+        Mark paid
+      <% end %>
+    <% end %>
+
+    <%= render DS::Menu.new do |menu| %>
+      <% menu.with_item(variant: "link", text: "Edit", href: edit_bill_path(bill), icon: "pencil", frame: :modal) %>
+      <% menu.with_item(
+        variant: "button",
+        text: "Delete",
+        href: bill_path(bill),
+        icon: "trash-2",
+        method: :delete,
+        confirm: CustomConfirm.for_resource_deletion(bill.name)
+      ) %>
+    <% end %>
+  </div>
+</div>

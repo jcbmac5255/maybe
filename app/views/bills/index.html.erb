@@ -1,0 +1,60 @@
+<% content_for :page_title, "Bills" %>
+
+<header class="flex items-center justify-between mb-6">
+  <h1 class="text-primary text-xl font-medium">Bills</h1>
+
+  <div class="flex items-center gap-2">
+    <%= render DS::Link.new(
+      text: "New bill",
+      variant: "primary",
+      icon: "plus",
+      href: new_bill_path,
+      frame: :modal
+    ) %>
+  </div>
+</header>
+
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <%= link_to bills_path(period: @previous_period.strftime("%Y-%m")),
+          class: "p-2 flex items-center justify-center hover:bg-alpha-black-25 rounded-md" do %>
+      <%= icon "chevron-left" %>
+    <% end %>
+
+    <h2 class="text-lg font-medium text-primary">
+      <%= @period.strftime("%B %Y") %>
+    </h2>
+
+    <%= link_to bills_path(period: @next_period.strftime("%Y-%m")),
+          class: "p-2 flex items-center justify-center hover:bg-alpha-black-25 rounded-md" do %>
+      <%= icon "chevron-right" %>
+    <% end %>
+  </div>
+
+  <%= render "calendar", bills: @bills, period: @period, today: Date.current %>
+
+  <div class="space-y-3">
+    <h2 class="text-sm font-medium text-secondary">Bills this month</h2>
+
+    <% if @bills.any? %>
+      <div class="space-y-2">
+        <% @bills.sort_by { |b| b.due_date_for(@period) }.each do |bill| %>
+          <%= render "bill", bill: bill, period: @period, today: Date.current %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex justify-center items-center py-20 bg-container rounded-xl shadow-border-xs">
+        <div class="text-center flex flex-col items-center max-w-[500px]">
+          <p class="text-sm text-secondary mb-4">No bills yet. Track your recurring bills and mark them paid as they come due.</p>
+          <%= render DS::Link.new(
+            text: "Add your first bill",
+            variant: "primary",
+            icon: "plus",
+            href: new_bill_path,
+            frame: :modal
+          ) %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
