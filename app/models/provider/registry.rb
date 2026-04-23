@@ -56,10 +56,6 @@ class Provider::Registry
         Provider::Plaid.new(config, region: :eu)
       end
 
-      def github
-        Provider::Github.new
-      end
-
       def openai
         access_token = ENV.fetch("OPENAI_ACCESS_TOKEN", Setting.openai_access_token)
 
