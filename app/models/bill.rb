@@ -3,6 +3,7 @@ class Bill < ApplicationRecord
 
   belongs_to :family
   belongs_to :category, optional: true
+  belongs_to :paid_from_account, class_name: "Account", optional: true
   has_many :bill_payments, dependent: :destroy
 
   monetize :amount
@@ -30,5 +31,46 @@ class Bill < ApplicationRecord
   def status_for(period, today: Date.current)
     return :paid if paid?(period)
     due_date_for(period) < today ? :overdue : :upcoming
+  end
+
+  def mark_paid!(period, at: Time.current)
+    period_start = period.beginning_of_month
+    existing = bill_payments.find_by(period: period_start)
+    return existing if existing
+
+    transaction do
+      payment = bill_payments.build(period: period_start, paid_at: at)
+
+      if paid_from_account
+        payment.entry = paid_from_account.entries.create!(
+          entryable: Transaction.new(category: category),
+          name: name,
+          amount: amount,
+          currency: paid_from_account.currency,
+          date: at.to_date,
+          notes: "Bill payment"
+        )
+      end
+
+      payment.save!
+      payment.entry&.sync_account_later
+      payment
+    end
+  end
+
+  def unmark_paid!(period)
+    payment = payment_for(period)
+    return unless payment
+
+    transaction do
+      entry = payment.entry
+      payment.destroy!
+
+      if entry
+        account = entry.account
+        entry.destroy!
+        account.sync_later
+      end
+    end
   end
 end

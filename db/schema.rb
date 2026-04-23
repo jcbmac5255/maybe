@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_23_162720) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -140,8 +140,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_23_162720) do
     t.datetime "paid_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "entry_id"
     t.index ["bill_id", "period"], name: "index_bill_payments_on_bill_id_and_period", unique: true
     t.index ["bill_id"], name: "index_bill_payments_on_bill_id"
+    t.index ["entry_id"], name: "index_bill_payments_on_entry_id"
   end
 
   create_table "bills", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -155,8 +157,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_23_162720) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "paid_from_account_id"
     t.index ["category_id"], name: "index_bills_on_category_id"
     t.index ["family_id"], name: "index_bills_on_family_id"
+    t.index ["paid_from_account_id"], name: "index_bills_on_paid_from_account_id"
   end
 
   create_table "budget_categories", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -857,6 +861,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_23_162720) do
   add_foreign_key "api_keys", "users"
   add_foreign_key "balances", "accounts", on_delete: :cascade
   add_foreign_key "bill_payments", "bills"
+  add_foreign_key "bill_payments", "entries"
+  add_foreign_key "bills", "accounts", column: "paid_from_account_id"
   add_foreign_key "bills", "categories"
   add_foreign_key "bills", "families"
   add_foreign_key "budget_categories", "budgets"

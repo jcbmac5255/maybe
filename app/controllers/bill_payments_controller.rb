@@ -3,15 +3,12 @@ class BillPaymentsController < ApplicationController
   before_action :set_period
 
   def create
-    @bill.bill_payments.find_or_create_by!(period: @period) do |bp|
-      bp.paid_at = Time.current
-    end
+    @bill.mark_paid!(@period)
     redirect_back_or_to bills_path(period: @period.strftime("%Y-%m"))
   end
 
   def destroy
-    payment = @bill.bill_payments.find_by(period: @period)
-    payment&.destroy
+    @bill.unmark_paid!(@period)
     redirect_back_or_to bills_path(period: @period.strftime("%Y-%m"))
   end
 
