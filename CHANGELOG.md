@@ -12,6 +12,10 @@ All notable changes to this self-hosted fork are listed here. Newest entries go 
 - **Calendar scales better on mobile** — tighter cells, single-letter day headers, and colored status dots instead of truncated name pills on small screens.
 - **Changelog page now reads from this file** — no more fetching release notes from the upstream (unmaintained) repo.
 - **Feedback page links repointed** to this fork's GitHub and the household Discord.
+- **Contact link in user menu** now points to the household Discord instead of the old maintainer's.
+- **Version bumped to 0.7.0** and the version/commit links in the user menu now point to this fork.
+- **Redis error page** setup-guide link repointed to this fork's Docker doc.
+- **Removed the upstream i18n disclaimer** from Preferences (pointed at a dead issue).
 
 ## 2026-04-23
 
