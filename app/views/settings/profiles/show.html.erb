@@ -64,39 +64,19 @@
       <% end %>
       <% if @pending_invitations.any? %>
         <% @pending_invitations.each do |invitation| %>
-          <div class="flex gap-2 items-center justify-between bg-container p-4 border border-alpha-black-25 rounded-lg">
-            <div class="flex gap-2 items-center">
-              <div class="w-9 h-9 shrink-0">
-                <div class="fg-inverse w-full h-full bg-surface-inset rounded-full flex items-center justify-center text-lg uppercase"><%= invitation.email[0] %></div>
-              </div>
-              <div class="flex">
-                <p class="text-primary font-medium text-sm"><%= invitation.email %></p>
-                <div class="rounded-md bg-surface px-1.5 py-0.5">
-                  <p class="uppercase text-secondary font-medium text-xs"><%= t(".pending") %></p>
+          <div class="bg-container p-4 border border-alpha-black-25 rounded-lg space-y-3">
+            <div class="flex gap-2 items-center justify-between">
+              <div class="flex gap-2 items-center min-w-0">
+                <div class="w-9 h-9 shrink-0">
+                  <div class="fg-inverse w-full h-full bg-surface-inset rounded-full flex items-center justify-center text-lg uppercase"><%= invitation.email[0] %></div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 min-w-0">
+                  <p class="text-primary font-medium text-sm truncate"><%= invitation.email %></p>
+                  <div class="rounded-md bg-surface px-1.5 py-0.5">
+                    <p class="uppercase text-secondary font-medium text-xs"><%= t(".pending") %></p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="flex items-center gap-4">
-              <% if self_hosted? %>
-                <div class="flex items-center gap-2" data-controller="clipboard">
-                  <p class="text-secondary text-sm"><%= t(".invitation_link") %></p>
-                  <span data-clipboard-target="source" class="hidden"><%= accept_invitation_url(invitation.token) %></span>
-                  <input type="text"
-                             readonly
-                             autocomplete="off"
-                             value="<%= accept_invitation_url(invitation.token) %>"
-                             class="text-sm bg-gray-50 px-2 py-1 rounded border border-secondary w-72">
-                  <button data-action="clipboard#copy" class="text-secondary hover:text-gray-700">
-                    <span data-clipboard-target="iconDefault">
-                      <%= icon "copy" %>
-                    </span>
-                    <span class="hidden" data-clipboard-target="iconSuccess">
-                      <%= icon "check" %>
-                    </span>
-                  </button>
-                </div>
-              <% end %>
-
               <% if Current.user.admin? %>
                 <%= render DS::Button.new(
                   variant: "icon",
@@ -107,6 +87,26 @@
                 ) %>
               <% end %>
             </div>
+
+            <% if self_hosted? %>
+              <div data-controller="clipboard" class="flex items-center gap-2 pt-2 border-t border-tertiary">
+                <p class="text-secondary text-xs shrink-0"><%= t(".invitation_link") %></p>
+                <span data-clipboard-target="source" class="hidden"><%= accept_invitation_url(invitation.token) %></span>
+                <input type="text"
+                       readonly
+                       autocomplete="off"
+                       value="<%= accept_invitation_url(invitation.token) %>"
+                       class="text-sm bg-surface-inset text-primary px-2 py-1 rounded border border-secondary w-full min-w-0">
+                <button data-action="clipboard#copy" class="text-secondary hover:text-primary shrink-0">
+                  <span data-clipboard-target="iconDefault">
+                    <%= icon "copy" %>
+                  </span>
+                  <span class="hidden" data-clipboard-target="iconSuccess">
+                    <%= icon "check" %>
+                  </span>
+                </button>
+              </div>
+            <% end %>
           </div>
         <% end %>
       <% end %>
