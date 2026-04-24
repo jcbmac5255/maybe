@@ -2,6 +2,13 @@
 
 All notable changes to this self-hosted fork are listed here. Newest versions go on top.
 
+## [0.9.0] - 2026-04-23
+
+### Changed
+- **Rebranded as Lumen.** New name, new logo (gold "L" with a layered sunset/horizon motif), new favicons, new PWA manifest, new AI persona. Footer credits the original Maybe Finance open-source project. The Ruby module name and database names stay as `Maybe` / `maybe_production` for internal continuity — only user-facing strings changed.
+- **Email "from" name** is now "Lumen" (instead of "Maybe Finance").
+- **Plaid link-account screen** and **2FA authenticator entry** both now show "Lumen" instead of "Maybe Finance".
+
 ## [0.8.0] - 2026-04-23
 
 ### Added
