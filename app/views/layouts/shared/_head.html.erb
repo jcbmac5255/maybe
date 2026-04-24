@@ -37,5 +37,13 @@
   <link rel="apple-touch-icon" href="/logo-pwa.png">
   <link rel="apple-touch-icon" sizes="512x512" href="/logo-pwa.png">
 
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("<%= pwa_service_worker_path %>", { scope: "/" }).catch(() => {});
+      });
+    }
+  </script>
+
   <%= yield :head %>
 </head>

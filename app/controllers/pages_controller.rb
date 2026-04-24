@@ -19,10 +19,23 @@ class PagesController < ApplicationController
     end
 
     family_currency = Current.family.currency
-    income_totals = Current.family.income_statement.income_totals(period: @cashflow_period)
-    expense_totals = Current.family.income_statement.expense_totals(period: @cashflow_period)
 
-    @cashflow_sankey_data = build_cashflow_sankey_data(income_totals, expense_totals, family_currency)
+    # Cache the sankey computation — rebuilding it iterates every category per request.
+    # Key includes latest transaction updated_at, so adding/editing a transaction invalidates.
+    txn_fingerprint = Current.family.transactions.maximum(:updated_at)&.to_i
+    cache_key = [
+      "dashboard_sankey",
+      Current.family.id,
+      @cashflow_period.key,
+      family_currency,
+      txn_fingerprint
+    ]
+
+    @cashflow_sankey_data = Rails.cache.fetch(cache_key, expires_in: 10.minutes) do
+      income_totals = Current.family.income_statement.income_totals(period: @cashflow_period)
+      expense_totals = Current.family.income_statement.expense_totals(period: @cashflow_period)
+      build_cashflow_sankey_data(income_totals, expense_totals, family_currency)
+    end
 
     @breadcrumbs = [ [ "Home", root_path ], [ "Dashboard", nil ] ]
   end
