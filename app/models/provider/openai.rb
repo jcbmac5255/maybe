@@ -38,7 +38,7 @@ class Provider::Openai < Provider
     end
   end
 
-  def chat_response(prompt, model:, instructions: nil, functions: [], function_results: [], streamer: nil, previous_response_id: nil)
+  def chat_response(prompt, model:, instructions: nil, functions: [], function_results: [], streamer: nil, previous_response_id: nil, chat: nil)
     with_provider_response do
       chat_config = ChatConfig.new(
         functions: functions,

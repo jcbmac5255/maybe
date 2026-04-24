@@ -63,6 +63,14 @@ class Provider::Registry
 
         Provider::Openai.new(access_token)
       end
+
+      def anthropic
+        api_key = ENV.fetch("ANTHROPIC_API_KEY", Setting.anthropic_api_key)
+
+        return nil unless api_key.present?
+
+        Provider::Anthropic.new(api_key)
+      end
   end
 
   def initialize(concept)
@@ -71,7 +79,7 @@ class Provider::Registry
   end
 
   def providers
-    available_providers.map { |p| self.class.send(p) }
+    available_providers.map { |p| self.class.send(p) }.compact
   end
 
   def get_provider(name)
@@ -92,9 +100,9 @@ class Provider::Registry
       when :securities
         %i[synth]
       when :llm
-        %i[openai]
+        %i[anthropic openai]
       else
-        %i[synth plaid_us plaid_eu github openai]
+        %i[synth plaid_us plaid_eu openai anthropic]
       end
     end
 end
