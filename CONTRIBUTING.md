@@ -1,42 +1,64 @@
-# Contributing to Maybe
+# Contributing to Lumen
 
-It means so much that you're interested in contributing to Maybe! Seriously. Thank you. The entire community benefits from these contributions!
+Thanks for your interest in contributing to Lumen! This is a self-hosted fork of the (no-longer-maintained) [Maybe Finance](https://github.com/maybe-finance/maybe) project, picked up with new features and ongoing maintenance.
 
-## House Rules
+## Before you start
 
-- Before contributing, familiarize yourself with our project conventions. You should read through our [Project Conventions Rule](https://github.com/maybe-finance/maybe/.cursor/rules/project-conventions.mdc), which is intended for LLMs, but is also an excellent primer on how we write code for Maybe.
-- While totally optional, consider using Cursor + VSCode as it will automatically apply our project conventions to your code via the `.cursor/rules` directory.
-- Before contributing, please check if it already exists in [issues](https://github.com/maybe-finance/maybe/issues) or [PRs](https://github.com/maybe-finance/maybe/pulls)
-- Given the speed at which we're moving on the codebase, we don't assign issues or "give" issues to anyone.
-- When multiple PRs are submitted for the same issue, we take the one that most succinctly & efficiently solves a given problem and stays within the scope of work.
-- Priority is generally given to previous committers as they've proven familiarity with the codebase and product.
+- Read through [`CLAUDE.md`](CLAUDE.md) — it documents the project conventions (Rails style, Hotwire-first frontend, testing philosophy, the TailwindCSS design system). Written for AI coding assistants, but works just as well as a primer for humans.
+- Check existing [issues](https://github.com/jcbmac5255/lumen/issues) and [PRs](https://github.com/jcbmac5255/lumen/pulls) before starting work on something so we don't duplicate effort.
+- When multiple PRs target the same issue, preference goes to whichever one most cleanly solves the problem within the scope that was asked for.
 
-## What should I contribute?
+## What to contribute
 
-As we are still in the early days of this project, we recommend [heading over to the Wiki](https://github.com/maybe-finance/maybe/wiki) to get a better idea of _what_ to contribute.
+- **Bug fixes** — always welcome.
+- **Small features** — quality-of-life improvements, UI polish, mobile fixes, additional account types or import formats.
+- **Documentation** — setup guides, deployment recipes, screenshots in the README.
 
-In general, _full features_ that get us closer to [our Vision](https://github.com/maybe-finance/maybe/wiki/Vision) are the most valuable contributions at this stage.
+For larger features, open an issue first to discuss scope before starting implementation.
 
 ## Development
 
 ### Setup
 
-To get setup for local development, you have two options:
+See the [README](README.md#local-development) for the short version. Requirements:
 
-1. [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) with VSCode (see the `.devcontainer` folder)
-2. Local Development
-   - [Mac Setup Guide](https://github.com/maybe-finance/maybe/wiki/Mac-Dev-Setup-Guide)
-   - [Linux Setup Guide](https://github.com/maybe-finance/maybe/wiki/Linux-Dev-Setup-Guide)
-   - [Windows Setup Guide](https://github.com/maybe-finance/maybe/wiki/Windows-Dev-Setup-Guide)
+- Ruby version from [`.ruby-version`](.ruby-version)
+- PostgreSQL >= 9.3
+- Redis
+
+```sh
+git clone https://github.com/jcbmac5255/lumen.git
+cd lumen
+cp .env.local.example .env.local
+bin/setup
+bin/dev
+```
+
+Dev Containers are also supported — see the `.devcontainer` folder if you prefer that workflow.
+
+### Pre-PR checks
+
+Before opening a PR, run the full check suite:
+
+```sh
+bin/rails test                          # unit + integration tests
+bin/rubocop -f github -a                # Ruby linter + auto-correct
+bundle exec erb_lint ./app/**/*.erb -a  # ERB linter + auto-correct
+bin/brakeman --no-pager                 # security analysis
+```
 
 ### Making a Pull Request
 
 1. Fork the repo
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request, and be sure to check the [Allow edits from maintainers](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) option while creating your PR. This allows maintainers to collaborate with you on your PR if needed.
-6. If possible, [link your pull request to an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) by adding the appropriate keyword (e.g. `fixes issue #XXX`)
-7. Before requesting a review, please make sure that all [Github Checks](https://docs.github.com/en/rest/checks?apiVersion=2022-11-28) have passed and your branch is up-to-date with the `main` branch. After doing so, request a review and wait for a maintainer's approval.
+2. Create a feature branch: `git checkout -b my-new-feature`
+3. Commit your changes with a clear message
+4. Push the branch: `git push origin my-new-feature`
+5. Open the PR against `main` and tick **"Allow edits from maintainers"**
+6. [Link the PR to an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) if one exists (`fixes #123`)
+7. Confirm all GitHub Checks pass and the branch is up to date with `main` before requesting review
 
-All PRs should target the `main` branch.
+## License & attribution
+
+Lumen is distributed under the [GNU AGPLv3](LICENSE), inherited from upstream Maybe Finance. Any code you contribute will be released under the same license.
+
+"Maybe" and the Maybe Finance logo are trademarks of Maybe Finance, Inc. and are not used in this project. Please respect that if you share screenshots or write about Lumen.
