@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Backup Maybe Finance production PostgreSQL DB to Hetzner Object Storage.
+# Streams pg_dump | gzip | rclone rcat, then prunes objects older than 30 days.
+
+set -euo pipefail
+
+STAMP=$(date -u +%Y-%m-%dT%H%M%SZ)
+FILE="maybe_production_${STAMP}.sql.gz"
+BUCKET="hetzner:maybe-finance"
+
+cd /opt/maybe
+
+# Load Postgres creds + RAILS_ENV from app env file
+set -a
+source /opt/maybe/.env.local
+set +a
+
+DB_NAME="${POSTGRES_DB:-maybe_production}"
+DB_HOST="${POSTGRES_HOST:-localhost}"
+
+PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
+  -h "${DB_HOST}" \
+  -U "${POSTGRES_USER}" \
+  -d "${DB_NAME}" \
+  --no-owner \
+  --no-privileges \
+  | gzip -9 \
+  | rclone rcat "${BUCKET}/${FILE}"
+
+# Retention: delete objects older than 30 days
+rclone delete --min-age 30d "${BUCKET}/" || true
+
+echo "Backup complete: ${FILE}"

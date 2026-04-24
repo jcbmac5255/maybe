@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# One-command production redeploy for Maybe Finance.
+# Run from /opt/maybe (or anywhere; we cd into it).
+# Assumes code in working tree is already committed and represents what you want live.
+
+set -euo pipefail
+
+cd /opt/maybe
+
+# shellcheck disable=SC1091
+set -a; source /opt/maybe/.env.local; set +a
+
+echo "==> [1/5] bundle install"
+bundle install --quiet
+
+echo "==> [2/5] db:migrate"
+RAILS_ENV=production bundle exec bin/rails db:migrate
+
+echo "==> [3/5] assets:precompile"
+RAILS_ENV=production bundle exec bin/rails assets:precompile
+
+echo "==> [4/5] systemctl restart maybe.service"
+sudo systemctl restart maybe.service
+
+echo "==> [5/5] health check"
+sleep 4
+for i in {1..10}; do
+  if curl -sf http://localhost:3000/up > /dev/null; then
+    echo "    healthy after ${i} attempt(s)"
+    echo "==> Deploy complete"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "==> WARNING: /up never returned 200. Check: sudo journalctl -u maybe.service -n 50"
+exit 1

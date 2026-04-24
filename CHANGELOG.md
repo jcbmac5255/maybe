@@ -17,6 +17,11 @@ All notable changes to this self-hosted fork are listed here. Newest entries go 
 - **Redis error page** setup-guide link repointed to this fork's Docker doc.
 - **Removed the upstream i18n disclaimer** from Preferences (pointed at a dead issue).
 
+### Infra
+- **Production deployment live** at https://maybe.nexgrid.cc via Nginx Proxy Manager → Rails (prod mode).
+- **Nightly database backups** streaming `pg_dump` to Hetzner Object Storage with 30-day retention.
+- **One-command deploy** via `bin/deploy` (runs migrations, precompiles assets, restarts the service).
+
 ## 2026-04-23
 
 ### Added
