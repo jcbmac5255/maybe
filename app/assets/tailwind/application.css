@@ -72,6 +72,11 @@
   --hw-handle-offset-right: 0px;
 }
 
+/* Hide Turbo Drive's progress bar — relying on Turbo Stream + view transitions instead */
+.turbo-progress-bar {
+  display: none;
+}
+
 /* Typography */
 .prose {
   @apply max-w-none text-primary;
