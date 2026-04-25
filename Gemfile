@@ -82,6 +82,9 @@ gem "after_commit_everywhere", "~> 1.0"
 gem "ruby-openai"
 gem "anthropic"
 
+# Passkey / WebAuthn
+gem "webauthn", "~> 3.4"
+
 group :development, :test do
   gem "debug", platforms: %i[mri windows]
   gem "brakeman", require: false

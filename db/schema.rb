@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_04_25_013028) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -35,10 +35,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
     t.decimal "cash_balance", precision: 19, scale: 4, default: "0.0"
     t.jsonb "locked_attributes", default: {}
     t.string "status", default: "active"
+    t.integer "display_order", default: 0, null: false
     t.index ["accountable_id", "accountable_type"], name: "index_accounts_on_accountable_id_and_accountable_type"
     t.index ["accountable_type"], name: "index_accounts_on_accountable_type"
     t.index ["currency"], name: "index_accounts_on_currency"
     t.index ["family_id", "accountable_type"], name: "index_accounts_on_family_id_and_accountable_type"
+    t.index ["family_id", "display_order"], name: "index_accounts_on_family_id_and_display_order"
     t.index ["family_id", "id"], name: "index_accounts_on_family_id_and_id"
     t.index ["family_id", "status"], name: "index_accounts_on_family_id_and_status"
     t.index ["family_id"], name: "index_accounts_on_family_id"
@@ -197,6 +199,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
     t.uuid "parent_id"
     t.string "classification", default: "expense", null: false
     t.string "lucide_icon", default: "shapes", null: false
+    t.index "family_id, lower((name)::text)", name: "index_categories_on_family_id_and_lower_name", unique: true
     t.index ["family_id"], name: "index_categories_on_family_id"
   end
 
@@ -829,10 +832,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
     t.text "goals", default: [], array: true
     t.datetime "set_onboarding_preferences_at"
     t.datetime "set_onboarding_goals_at"
+    t.string "webauthn_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["family_id"], name: "index_users_on_family_id"
     t.index ["last_viewed_chat_id"], name: "index_users_on_last_viewed_chat_id"
     t.index ["otp_secret"], name: "index_users_on_otp_secret", unique: true, where: "(otp_secret IS NOT NULL)"
+    t.index ["webauthn_id"], name: "index_users_on_webauthn_id", unique: true
   end
 
   create_table "valuations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -851,6 +856,19 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
     t.string "make"
     t.string "model"
     t.jsonb "locked_attributes", default: {}
+  end
+
+  create_table "webauthn_credentials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.string "external_id", null: false
+    t.text "public_key", null: false
+    t.bigint "sign_count", default: 0, null: false
+    t.string "nickname"
+    t.datetime "last_used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["external_id"], name: "index_webauthn_credentials_on_external_id", unique: true
+    t.index ["user_id"], name: "index_webauthn_credentials_on_user_id"
   end
 
   add_foreign_key "accounts", "families"
@@ -910,4 +928,5 @@ ActiveRecord::Schema[7.2].define(version: 2026_04_24_000000) do
   add_foreign_key "transfers", "transactions", column: "outflow_transaction_id", on_delete: :cascade
   add_foreign_key "users", "chats", column: "last_viewed_chat_id"
   add_foreign_key "users", "families"
+  add_foreign_key "webauthn_credentials", "users"
 end

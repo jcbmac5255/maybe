@@ -8,6 +8,7 @@ class User < ApplicationRecord
   has_many :api_keys, dependent: :destroy
   has_many :mobile_devices, dependent: :destroy
   has_many :invitations, foreign_key: :inviter_id, dependent: :destroy
+  has_many :webauthn_credentials, dependent: :destroy
   has_many :impersonator_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonator_id, dependent: :destroy
   has_many :impersonated_support_sessions, class_name: "ImpersonationSession", foreign_key: :impersonated_id, dependent: :destroy
   accepts_nested_attributes_for :family, update_only: true
@@ -88,6 +89,14 @@ class User < ApplicationRecord
 
   def ai_available?
     !Rails.application.config.app_mode.self_hosted? || ENV["OPENAI_ACCESS_TOKEN"].present? || ENV["ANTHROPIC_API_KEY"].present?
+  end
+
+  # Stable per-user identifier WebAuthn associates credentials with.
+  # Generated lazily on first registration.
+  def ensure_webauthn_id!
+    return webauthn_id if webauthn_id.present?
+    update!(webauthn_id: WebAuthn.generate_user_id)
+    webauthn_id
   end
 
   def ai_enabled?
