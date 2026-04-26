@@ -1,0 +1,62 @@
+<div class="space-y-6">
+  <div>
+    <h2 class="font-medium mb-1">AI assistant</h2>
+    <p class="text-secondary text-sm">
+      Configure an Anthropic and/or OpenAI API key to enable the AI assistant. Whichever key is set will drive the assistant — if both are set, Anthropic takes precedence. Values entered here override the matching environment variable; clearing a value falls back to the env var if one is set.
+    </p>
+  </div>
+
+  <%= styled_form_with model: Setting.new,
+                       url: settings_hosting_path,
+                       method: :patch,
+                       data: {
+                         controller: "auto-submit-form",
+                         "auto-submit-form-trigger-event-value": "blur"
+                       } do |form| %>
+    <div class="space-y-4">
+      <div data-controller="api-key-field" class="space-y-1">
+        <%= form.text_field :anthropic_api_key,
+                            label: "Anthropic API key",
+                            type: "password",
+                            placeholder: "sk-ant-...",
+                            value: Setting.anthropic_api_key,
+                            data: {
+                              "auto-submit-form-target": "auto",
+                              "api-key-field-target": "input"
+                            } %>
+        <div class="flex items-center justify-between text-xs">
+          <% if ENV["ANTHROPIC_API_KEY"].present? %>
+            <p class="text-secondary">Falls back to <code class="bg-surface-inset px-1 py-0.5 rounded font-mono">ANTHROPIC_API_KEY</code> if cleared.</p>
+          <% else %>
+            <span></span>
+          <% end %>
+          <% if Setting.anthropic_api_key.present? %>
+            <button type="button" data-action="click->api-key-field#clear" class="text-secondary hover:text-primary underline">Clear</button>
+          <% end %>
+        </div>
+      </div>
+
+      <div data-controller="api-key-field" class="space-y-1">
+        <%= form.text_field :openai_access_token,
+                            label: "OpenAI API key",
+                            type: "password",
+                            placeholder: "sk-...",
+                            value: Setting.openai_access_token,
+                            data: {
+                              "auto-submit-form-target": "auto",
+                              "api-key-field-target": "input"
+                            } %>
+        <div class="flex items-center justify-between text-xs">
+          <% if ENV["OPENAI_ACCESS_TOKEN"].present? %>
+            <p class="text-secondary">Falls back to <code class="bg-surface-inset px-1 py-0.5 rounded font-mono">OPENAI_ACCESS_TOKEN</code> if cleared.</p>
+          <% else %>
+            <span></span>
+          <% end %>
+          <% if Setting.openai_access_token.present? %>
+            <button type="button" data-action="click->api-key-field#clear" class="text-secondary hover:text-primary underline">Clear</button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

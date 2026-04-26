@@ -57,7 +57,7 @@ class Provider::Registry
       end
 
       def openai
-        access_token = ENV.fetch("OPENAI_ACCESS_TOKEN", Setting.openai_access_token)
+        access_token = Setting.openai_access_token.presence || ENV["OPENAI_ACCESS_TOKEN"].presence
 
         return nil unless access_token.present?
 
@@ -65,7 +65,7 @@ class Provider::Registry
       end
 
       def anthropic
-        api_key = ENV.fetch("ANTHROPIC_API_KEY", Setting.anthropic_api_key)
+        api_key = Setting.anthropic_api_key.presence || ENV["ANTHROPIC_API_KEY"].presence
 
         return nil unless api_key.present?
 
