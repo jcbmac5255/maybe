@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# One-command production redeploy for Maybe Finance.
-# Run from /opt/maybe (or anywhere; we cd into it).
+# One-command production redeploy for Lumen.
+# Run from /opt/lumen (or anywhere; we cd into it).
 # Assumes code in working tree is already committed and represents what you want live.
 
 set -euo pipefail
 
-cd /opt/maybe
+cd /opt/lumen
 
 # shellcheck disable=SC1091
-set -a; source /opt/maybe/.env.local; set +a
+set -a; source /opt/lumen/.env.local; set +a
 
 echo "==> [1/5] bundle install"
 bundle install --quiet
@@ -19,8 +19,8 @@ RAILS_ENV=production bundle exec bin/rails db:migrate
 echo "==> [3/5] assets:precompile"
 RAILS_ENV=production bundle exec bin/rails assets:precompile
 
-echo "==> [4/5] systemctl restart maybe.service"
-sudo systemctl restart maybe.service
+echo "==> [4/5] systemctl restart lumen.service"
+sudo systemctl restart lumen.service
 
 echo "==> [5/5] health check"
 sleep 4
@@ -33,5 +33,5 @@ for i in {1..10}; do
   sleep 1
 done
 
-echo "==> WARNING: /up never returned 200. Check: sudo journalctl -u maybe.service -n 50"
+echo "==> WARNING: /up never returned 200. Check: sudo journalctl -u lumen.service -n 50"
 exit 1

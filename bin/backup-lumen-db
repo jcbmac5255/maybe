@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Backup Maybe Finance production PostgreSQL DB to Hetzner Object Storage.
+# Backup Lumen production PostgreSQL DB to Hetzner Object Storage.
 # Streams pg_dump | gzip | rclone rcat, then prunes objects older than 30 days.
 
 set -euo pipefail
@@ -8,11 +8,11 @@ STAMP=$(date +%Y-%m-%dT%H%M%S)
 FILE="maybe_production_${STAMP}.sql.gz"
 BUCKET="hetzner:lumen-finance"
 
-cd /opt/maybe
+cd /opt/lumen
 
 # Load Postgres creds + RAILS_ENV from app env file
 set -a
-source /opt/maybe/.env.local
+source /opt/lumen/.env.local
 set +a
 
 DB_NAME="${POSTGRES_DB:-maybe_production}"
