@@ -2,6 +2,18 @@
 
 <% periods = %w[last_7_days last_30_days current_month last_90_days current_year last_365_days] %>
 
+<%
+  pct_delta = ->(now, prior) {
+    return nil if prior.to_f.zero?
+    ((now.to_f - prior.to_f) / prior.to_f.abs * 100).round(1)
+  }
+  income_delta = pct_delta.(@income.total, @prior_income.total)
+  expense_delta = pct_delta.(@expenses.total, @prior_expenses.total)
+  net_now = @income.total - @expenses.total
+  net_prior = @prior_income.total - @prior_expenses.total
+  net_delta = pct_delta.(net_now, net_prior)
+%>
+
 <div class="space-y-6 pb-24">
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
     <div>
@@ -19,42 +31,273 @@
     </div>
   </header>
 
-  <%# KPI cards %>
-  <% net = @income.total - @expenses.total %>
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    <div class="bg-container shadow-border-xs rounded-xl p-4">
-      <p class="text-xs uppercase text-secondary font-medium mb-1">Income</p>
-      <p class="text-2xl font-medium text-green-600"><%= format_money(Money.new(@income.total, @currency)) %></p>
+  <%# AI narrative — lazy-loaded so the page doesn't wait for Claude %>
+  <%= turbo_frame_tag "insights_narrative", src: insights_narrative_path(period: @period.key), loading: :lazy, class: "block" do %>
+    <div class="bg-container shadow-border-xs rounded-xl p-4 flex items-center gap-3">
+      <%= icon "sparkles", class: "text-secondary shrink-0" %>
+      <p class="text-sm text-secondary">Reading your finances&hellip;</p>
     </div>
+  <% end %>
+
+  <%# KPI cards w/ vs prior period deltas %>
+  <%
+    savings_rate = @income.total.zero? ? nil : ((@income.total - @expenses.total).to_f / @income.total.to_f * 100).round(1)
+    prior_savings_rate = @prior_income.total.zero? ? nil : ((@prior_income.total - @prior_expenses.total).to_f / @prior_income.total.to_f * 100).round(1)
+    savings_delta = (savings_rate && prior_savings_rate) ? (savings_rate - prior_savings_rate).round(1) : nil
+  %>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <%= render "kpi_card", label: "Income", amount: @income.total, currency: @currency, color: "green", delta: income_delta, delta_good: ->(d) { d >= 0 }, comparison_label: @period.comparison_label %>
+    <%= render "kpi_card", label: "Expenses", amount: @expenses.total, currency: @currency, color: "red", delta: expense_delta, delta_good: ->(d) { d <= 0 }, comparison_label: @period.comparison_label %>
+    <%= render "kpi_card", label: "Net", amount: net_now, currency: @currency, color: net_now.negative? ? "red" : "primary", delta: net_delta, delta_good: ->(d) { d >= 0 }, comparison_label: @period.comparison_label %>
+
     <div class="bg-container shadow-border-xs rounded-xl p-4">
-      <p class="text-xs uppercase text-secondary font-medium mb-1">Expenses</p>
-      <p class="text-2xl font-medium text-red-600"><%= format_money(Money.new(@expenses.total, @currency)) %></p>
-    </div>
-    <div class="bg-container shadow-border-xs rounded-xl p-4">
-      <p class="text-xs uppercase text-secondary font-medium mb-1">Net</p>
-      <p class="text-2xl font-medium <%= net.negative? ? "text-red-600" : "text-primary" %>">
-        <%= format_money(Money.new(net, @currency)) %>
+      <p class="text-xs uppercase text-secondary font-medium mb-1">Savings rate</p>
+      <p class="text-2xl font-medium <%= savings_rate.nil? ? "text-secondary" : (savings_rate >= 20 ? "text-green-600" : (savings_rate >= 0 ? "text-primary" : "text-red-600")) %>">
+        <%= savings_rate.nil? ? "—" : "#{savings_rate}%" %>
+      </p>
+      <p class="text-xs mt-1 <%= savings_delta.nil? ? "text-secondary" : (savings_delta >= 0 ? "text-green-600" : "text-red-600") %>">
+        <% if savings_delta.nil? %>
+          <span class="text-secondary">No prior data</span>
+        <% else %>
+          <%= savings_delta >= 0 ? "↑" : "↓" %> <%= savings_delta.abs %>pp
+          <span class="text-secondary"><%= @period.comparison_label %></span>
+        <% end %>
       </p>
     </div>
   </div>
 
-  <%# Income breakdown %>
+  <%# Spending velocity (only on in-progress periods) %>
+  <% if @velocity %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <h2 class="text-sm font-medium text-primary">On pace for <%= @velocity[:period_label] %></h2>
+        <span class="text-xs text-secondary"><%= @velocity[:days_remaining] %> days left</span>
+      </div>
+      <div class="flex items-baseline gap-3 flex-wrap">
+        <p class="text-2xl font-medium text-primary">
+          <%= format_money(Money.new(@velocity[:projected], @currency)) %>
+        </p>
+        <p class="text-sm text-secondary">
+          projected · <%= format_money(Money.new(@velocity[:so_far], @currency)) %> so far in <%= @velocity[:days_elapsed] %> days
+        </p>
+      </div>
+      <% pace_pct = @velocity[:projected].zero? ? 0 : (@velocity[:so_far] / @velocity[:projected] * 100).round %>
+      <div class="mt-3 h-2 w-full bg-surface-inset rounded-full overflow-hidden">
+        <div class="h-full bg-blue-500/70 rounded-full" style="width: <%= pace_pct %>%"></div>
+      </div>
+    </section>
+  <% end %>
+
+  <%# Income source diversity %>
+  <% if @income_diversity %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-2">Income sources</h2>
+      <p class="text-sm text-secondary">
+        <% if @income_diversity[:sources_count] == 1 %>
+          All income came from <span class="text-primary font-medium"><%= @income_diversity[:top_category].name %></span> — concentrated in one source.
+        <% elsif @income_diversity[:concentrated] %>
+          <strong class="text-primary"><%= @income_diversity[:top_share] %>%</strong> of income came from <span class="text-primary font-medium"><%= @income_diversity[:top_category].name %></span> across <%= @income_diversity[:sources_count] %> categories.
+        <% else %>
+          Income spread across <strong class="text-primary"><%= @income_diversity[:sources_count] %> categories</strong> — top is <span class="text-primary font-medium"><%= @income_diversity[:top_category].name %></span> at <%= @income_diversity[:top_share] %>%.
+        <% end %>
+      </p>
+    </section>
+  <% end %>
+
   <% if @income_rows.any? %>
     <section class="bg-container shadow-border-xs rounded-xl p-4">
       <h2 class="text-sm font-medium text-primary mb-3">Income by category</h2>
-      <%= render "category_bars", rows: @income_rows, total: @income.total, currency: @currency, color: "green" %>
+      <%= render "category_bars", rows: @income_rows, total: @income.total, currency: @currency, color: "green", period: @period %>
     </section>
   <% end %>
 
-  <%# Expense breakdown %>
   <% if @expense_rows.any? %>
     <section class="bg-container shadow-border-xs rounded-xl p-4">
       <h2 class="text-sm font-medium text-primary mb-3">Expenses by category</h2>
-      <%= render "category_bars", rows: @expense_rows, total: @expenses.total, currency: @currency, color: "red" %>
+      <%= render "category_bars", rows: @expense_rows, total: @expenses.total, currency: @currency, color: "red", period: @period %>
     </section>
   <% end %>
 
-  <%# Top merchants %>
+  <%# Last 12 months income vs expenses %>
+  <% if @monthly_trend.any? && @monthly_trend.any? { |m| m[:income] > 0 || m[:expense] > 0 } %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3 gap-3">
+        <h2 class="text-sm font-medium text-primary">Last 12 months</h2>
+        <div class="flex items-center gap-3 text-xs text-secondary">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-green-500/70"></span>Income</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-sm bg-red-500/70"></span>Expenses</span>
+        </div>
+      </div>
+      <% max_val = @monthly_trend.flat_map { |m| [ m[:income], m[:expense] ] }.max %>
+      <div class="grid gap-2 items-end" style="grid-template-columns: repeat(<%= @monthly_trend.size %>, minmax(0, 1fr)); height: 160px;">
+        <% @monthly_trend.each do |m| %>
+          <% income_pct = max_val.zero? ? 0 : (m[:income] / max_val * 100).round %>
+          <% expense_pct = max_val.zero? ? 0 : (m[:expense] / max_val * 100).round %>
+          <div class="flex flex-col items-center justify-end h-full gap-1"
+               title="<%= m[:month].strftime("%b %Y") %> · Income #{format_money(Money.new(m[:income], @currency))} · Expenses #{format_money(Money.new(m[:expense], @currency))}">
+            <div class="flex items-end justify-center gap-0.5 w-full" style="height: 100%;">
+              <div class="bg-green-500/70 rounded-t-sm" style="width: 45%; height: <%= [ income_pct, 1 ].max %>%"></div>
+              <div class="bg-red-500/70 rounded-t-sm" style="width: 45%; height: <%= [ expense_pct, 1 ].max %>%"></div>
+            </div>
+            <span class="text-[10px] text-secondary"><%= m[:month].strftime("%b") %></span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <%# Bills coverage %>
+  <% if @bills_coverage %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Bills coverage</h2>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-secondary">Recurring bills (<%= @bills_coverage[:active_bills_count] %> active)</span>
+          <span class="font-medium text-primary tabular-nums"><%= @bills_coverage[:pct] %>%</span>
+        </div>
+        <div class="h-2 w-full bg-surface-inset rounded-full overflow-hidden">
+          <div class="h-full bg-amber-500/70 rounded-full" style="width: <%= @bills_coverage[:pct] %>%"></div>
+        </div>
+        <p class="text-xs text-secondary">
+          About <%= format_money(Money.new(@bills_coverage[:bills_total], @currency)) %>
+          of <%= format_money(Money.new(@bills_coverage[:expenses_total], @currency)) %>
+          total expenses are tracked recurring bills.
+        </p>
+      </div>
+    </section>
+  <% end %>
+
+  <%# Recurring transactions / subscriptions %>
+  <% if @recurring.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3 gap-3">
+        <h2 class="text-sm font-medium text-primary">Likely recurring (last 90 days)</h2>
+        <p class="text-xs text-secondary tabular-nums">
+          ~<%= format_money(Money.new(@recurring.sum { |r| r[:monthly_estimate] }, @currency)) %>/mo
+        </p>
+      </div>
+      <ul class="divide-y divide-tertiary">
+        <% @recurring.first(10).each do |row| %>
+          <li class="flex items-center gap-3 py-2.5">
+            <div class="w-7 h-7 rounded-full bg-surface-inset flex items-center justify-center text-xs text-secondary font-medium">
+              <%= row[:merchant_name].first.upcase %>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-primary truncate"><%= row[:merchant_name] %></p>
+              <p class="text-xs text-secondary">
+                <%= row[:count] %> hits · last <%= row[:last_seen].strftime("%b %-d") %>
+              </p>
+            </div>
+            <p class="text-sm font-medium text-primary tabular-nums">
+              ~<%= format_money(Money.new(row[:monthly_estimate], @currency)) %>/mo
+            </p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%# Spending by day of week %>
+  <% if @spend_by_dow.values.sum > 0 %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Spending by day of week</h2>
+      <% max_dow = @spend_by_dow.values.max %>
+      <% day_labels = %w[Sun Mon Tue Wed Thu Fri Sat] %>
+      <div class="grid grid-cols-7 gap-2 items-end" style="height: 140px;">
+        <% (0..6).each do |dow| %>
+          <% amount = @spend_by_dow[dow] %>
+          <% pct = max_dow.zero? ? 0 : (amount / max_dow * 100).round %>
+          <div class="flex flex-col items-center justify-end h-full gap-1">
+            <span class="text-[10px] tabular-nums text-secondary"><%= format_money(Money.new(amount, @currency)) %></span>
+            <div class="w-full bg-red-500/60 rounded-t-md" style="height: <%= [pct, 4].max %>%"></div>
+            <span class="text-xs text-secondary"><%= day_labels[dow] %></span>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <%# Largest single transactions %>
+  <% if @largest_transactions.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Largest transactions</h2>
+      <ul class="divide-y divide-tertiary">
+        <% @largest_transactions.each do |txn| %>
+          <% entry = txn.entry %>
+          <li class="flex items-center gap-3 py-2.5">
+            <%= render DS::FilledIcon.new(variant: :text, text: entry.name, size: "sm", rounded: true) %>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-primary truncate"><%= entry.name %></p>
+              <p class="text-xs text-secondary">
+                <%= entry.date.strftime("%b %-d") %> · <%= entry.account.name %>
+                <% if txn.category %>
+                  · <%= txn.category.name %>
+                <% end %>
+              </p>
+            </div>
+            <p class="text-sm font-medium <%= entry.amount.negative? ? "text-green-600" : "text-primary" %>">
+              <%= entry.amount.negative? ? "+" : "−" %><%= format_money(entry.amount_money.abs) %>
+            </p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%# Unusual spending (outliers vs category baseline) %>
+  <% if @outliers.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Unusual spending</h2>
+      <p class="text-xs text-secondary mb-3">Transactions far above your typical spend in their category (last 90 days).</p>
+      <ul class="divide-y divide-tertiary">
+        <% @outliers.each do |row| %>
+          <% txn = row[:transaction]; entry = txn.entry %>
+          <li class="flex items-center gap-3 py-2.5">
+            <%= render DS::FilledIcon.new(variant: :text, text: entry.name, size: "sm", rounded: true) %>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-primary truncate"><%= entry.name %></p>
+              <p class="text-xs text-secondary">
+                <%= entry.date.strftime("%b %-d") %> · <%= txn.category.name %>
+                · <span class="text-amber-600 font-medium"><%= row[:ratio] %>× usual</span>
+              </p>
+            </div>
+            <p class="text-sm font-medium text-primary tabular-nums">
+              <%= format_money(entry.amount_money.abs) %>
+            </p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%# Account cashflow %>
+  <% if @account_cashflow.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Cashflow by account</h2>
+      <ul class="divide-y divide-tertiary">
+        <% @account_cashflow.each do |row| %>
+          <% account = row[:account] %>
+          <li class="flex items-center gap-3 py-2.5">
+            <% if account.logo.attached? %>
+              <%= image_tag account.logo, class: "w-7 h-7 rounded-full object-cover" %>
+            <% else %>
+              <div class="w-7 h-7 rounded-full bg-surface-inset flex items-center justify-center text-xs text-secondary font-medium">
+                <%= account.name.first.upcase %>
+              </div>
+            <% end %>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-primary truncate"><%= account.name %></p>
+              <p class="text-xs text-secondary"><%= account.accountable_type %></p>
+            </div>
+            <p class="text-sm font-medium tabular-nums <%= row[:net] >= 0 ? "text-green-600" : "text-red-600" %>">
+              <%= row[:net] >= 0 ? "+" : "−" %><%= format_money(Money.new(row[:net].abs, @currency)) %>
+            </p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
   <% if @top_merchants.any? %>
     <section class="bg-container shadow-border-xs rounded-xl p-4">
       <h2 class="text-sm font-medium text-primary mb-3">Top merchants by spend</h2>

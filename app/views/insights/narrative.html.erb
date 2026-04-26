@@ -1,0 +1,8 @@
+<%= turbo_frame_tag "insights_narrative", class: "block" do %>
+  <% if @narrative.present? %>
+    <div class="bg-container shadow-border-xs rounded-xl p-4 flex items-start gap-3">
+      <%= icon "sparkles", class: "text-amber-500 shrink-0 mt-0.5" %>
+      <p class="text-sm text-primary leading-relaxed"><%= @narrative %></p>
+    </div>
+  <% end %>
+<% end %>

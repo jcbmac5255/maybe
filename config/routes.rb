@@ -33,6 +33,7 @@ Rails.application.routes.draw do
   get "changelog", to: "pages#changelog"
   get "feedback", to: "pages#feedback"
   get "insights", to: "insights#show"
+  get "insights/narrative", to: "insights#narrative", as: :insights_narrative
 
   resource :current_session, only: %i[update]
 
