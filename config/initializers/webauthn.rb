@@ -2,7 +2,7 @@ domain = ENV.fetch("APP_DOMAIN", "lumen.nexgrid.cc")
 
 WebAuthn.configure do |config|
   # The WebAuthn-spec "origin" is the page origin browsers see — must include scheme.
-  config.origin = "https://#{domain}"
+  config.allowed_origins = [ "https://#{domain}" ]
 
   # The "Relying Party" — what shows up in the browser's biometric prompt.
   config.rp_name = "Lumen"

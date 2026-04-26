@@ -1,0 +1,88 @@
+<% content_for :page_title, "Insights" %>
+
+<% periods = %w[last_7_days last_30_days current_month last_90_days current_year last_365_days] %>
+
+<div class="space-y-6 pb-24">
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <h1 class="text-xl lg:text-2xl font-medium text-primary">Insights</h1>
+      <p class="text-sm text-secondary">How your money moved over the selected period.</p>
+    </div>
+
+    <div class="flex flex-wrap gap-1 bg-surface-inset rounded-lg p-1">
+      <% periods.each do |key| %>
+        <% active = @period.key.to_s == key %>
+        <%= link_to Period.from_key(key).label_short,
+              insights_path(period: key),
+              class: class_names("px-3 py-1.5 text-xs font-medium rounded-md", active ? "bg-container shadow-border-xs text-primary" : "text-secondary hover:text-primary") %>
+      <% end %>
+    </div>
+  </header>
+
+  <%# KPI cards %>
+  <% net = @income.total - @expenses.total %>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="bg-container shadow-border-xs rounded-xl p-4">
+      <p class="text-xs uppercase text-secondary font-medium mb-1">Income</p>
+      <p class="text-2xl font-medium text-green-600"><%= format_money(Money.new(@income.total, @currency)) %></p>
+    </div>
+    <div class="bg-container shadow-border-xs rounded-xl p-4">
+      <p class="text-xs uppercase text-secondary font-medium mb-1">Expenses</p>
+      <p class="text-2xl font-medium text-red-600"><%= format_money(Money.new(@expenses.total, @currency)) %></p>
+    </div>
+    <div class="bg-container shadow-border-xs rounded-xl p-4">
+      <p class="text-xs uppercase text-secondary font-medium mb-1">Net</p>
+      <p class="text-2xl font-medium <%= net.negative? ? "text-red-600" : "text-primary" %>">
+        <%= format_money(Money.new(net, @currency)) %>
+      </p>
+    </div>
+  </div>
+
+  <%# Income breakdown %>
+  <% if @income_rows.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Income by category</h2>
+      <%= render "category_bars", rows: @income_rows, total: @income.total, currency: @currency, color: "green" %>
+    </section>
+  <% end %>
+
+  <%# Expense breakdown %>
+  <% if @expense_rows.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Expenses by category</h2>
+      <%= render "category_bars", rows: @expense_rows, total: @expenses.total, currency: @currency, color: "red" %>
+    </section>
+  <% end %>
+
+  <%# Top merchants %>
+  <% if @top_merchants.any? %>
+    <section class="bg-container shadow-border-xs rounded-xl p-4">
+      <h2 class="text-sm font-medium text-primary mb-3">Top merchants by spend</h2>
+      <ul class="divide-y divide-tertiary">
+        <% @top_merchants.each do |row| %>
+          <li class="flex items-center gap-3 py-2.5">
+            <% if row[:merchant].respond_to?(:logo_url) && row[:merchant].logo_url.present? %>
+              <%= image_tag row[:merchant].logo_url, class: "w-7 h-7 rounded-full" %>
+            <% else %>
+              <div class="w-7 h-7 rounded-full bg-surface-inset flex items-center justify-center text-xs text-secondary font-medium">
+                <%= row[:merchant].name.first.upcase %>
+              </div>
+            <% end %>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-primary truncate"><%= row[:merchant].name %></p>
+              <p class="text-xs text-secondary"><%= row[:count] %> <%= "transaction".pluralize(row[:count]) %></p>
+            </div>
+            <p class="text-sm font-medium text-primary"><%= format_money(Money.new(row[:total], @currency)) %></p>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if @income_rows.empty? && @expense_rows.empty? %>
+    <div class="bg-container shadow-border-xs rounded-xl p-8 text-center text-secondary">
+      <%= icon "bar-chart", class: "mx-auto mb-3 text-secondary" %>
+      <p class="text-sm">No transactions in this period yet.</p>
+    </div>
+  <% end %>
+</div>

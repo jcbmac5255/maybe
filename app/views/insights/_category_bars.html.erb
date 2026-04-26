@@ -1,0 +1,31 @@
+<%# locals: (rows:, total:, currency:, color:) %>
+
+<%
+  bar_class = case color
+    when "green" then "bg-green-500/70"
+    when "red"   then "bg-red-500/70"
+    else "bg-blue-500/70"
+  end
+%>
+
+<ul class="space-y-3">
+  <% rows.each do |row| %>
+    <% pct = total.zero? ? 0 : (row.total.to_f / total * 100).round(1) %>
+    <li class="space-y-1">
+      <div class="flex items-center justify-between gap-3 text-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full shrink-0"
+                style="background-color: <%= row.category.color.presence || '#94a3b8' %>"></span>
+          <span class="text-primary truncate"><%= row.category.name %></span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-xs text-secondary tabular-nums"><%= pct %>%</span>
+          <span class="font-medium text-primary tabular-nums"><%= format_money(Money.new(row.total, currency)) %></span>
+        </div>
+      </div>
+      <div class="h-1.5 w-full bg-surface-inset rounded-full overflow-hidden">
+        <div class="h-full <%= bar_class %> rounded-full" style="width: <%= pct %>%"></div>
+      </div>
+    </li>
+  <% end %>
+</ul>

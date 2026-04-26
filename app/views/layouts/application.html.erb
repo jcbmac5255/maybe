@@ -3,6 +3,7 @@
   { name: "Transactions", path: transactions_path, icon: "credit-card", icon_custom: false, active: page_active?(transactions_path) },
   { name: "Budgets", path: budget_path(Date.current.strftime("%b-%Y").downcase), icon: "map", icon_custom: false, active: page_active?(budgets_path) },
   { name: "Bills", path: bills_path, icon: "receipt", icon_custom: false, active: page_active?(bills_path) },
+  { name: "Insights", path: insights_path, icon: "bar-chart-3", icon_custom: false, active: page_active?(insights_path) },
   { name: "Assistant", path: chats_path, icon: "icon-assistant", icon_custom: true, active: page_active?(chats_path), mobile_only: true }
 ] %>
 
