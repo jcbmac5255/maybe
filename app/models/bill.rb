@@ -75,19 +75,7 @@ class Bill < ApplicationRecord
   end
 
   def unmark_paid!(period)
-    payment = payment_for(period)
-    return unless payment
-
-    transaction do
-      entry = payment.entry
-      payment.destroy!
-
-      if entry
-        account = entry.account
-        entry.destroy!
-        account.sync_later
-      end
-    end
+    payment_for(period)&.destroy!
   end
 
   private

@@ -102,4 +102,27 @@ class BillTest < ActiveSupport::TestCase
       @bill.unmark_paid!(Date.current)
     end
   end
+
+  test "destroying the bill removes its single-entry payments" do
+    @bill.update!(paid_from_account: @checking)
+    payment = @bill.mark_paid!(Date.current)
+    entry_id = payment.entry.id
+
+    @bill.destroy!
+
+    assert_nil BillPayment.find_by(id: payment.id)
+    assert_nil Entry.find_by(id: entry_id)
+  end
+
+  test "destroying the bill removes both legs of transfer payments" do
+    @bill.update!(paid_from_account: @checking, paid_to_account: @credit_card)
+    payment = @bill.mark_paid!(Date.current)
+    outflow_entry = payment.entry
+    inflow_entry = outflow_entry.transaction.transfer.inflow_transaction.entry
+
+    @bill.destroy!
+
+    assert_nil Entry.find_by(id: outflow_entry.id)
+    assert_nil Entry.find_by(id: inflow_entry.id)
+  end
 end
