@@ -24,10 +24,21 @@ module Account::Chartable
   end
 
   def sparkline_series
-    cache_key = family.build_cache_key("#{id}_sparkline", invalidate_on_data_updates: true)
-
-    Rails.cache.fetch(cache_key, expires_in: 24.hours) do
+    Rails.cache.fetch(sparkline_cache_key, expires_in: 24.hours) do
       balance_series
     end
+  end
+
+  # Per-account cache key. Family-wide invalidation made every account sparkline
+  # bust on every sync, which stampedes the request pool on the accounts list.
+  # Now this key only changes when this account's own data does.
+  def sparkline_cache_key
+    [
+      family_id,
+      id,
+      "sparkline",
+      updated_at.to_i,
+      balances.maximum(:updated_at)&.to_i
+    ].compact.join("_")
   end
 end
